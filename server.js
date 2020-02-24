@@ -1,6 +1,35 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import cors from 'cors'
+import mongoose from 'mongoose'
+import crypto from 'crypto'
+import bcrypt from 'bcrypt-nodejs'
+
+
+const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/arosAPI"
+mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.Promise = Promise
+
+const User = mongoose.model('User', {
+  name: {
+    type: String,
+    unique: true,
+    minlength: 3
+  },
+  email: {
+    type: String,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  accessToken: {
+    type: String,
+    default: () => crypto.randomBytes(128).toString('hex')
+  }
+})
+
 
 // Defines the port the app will run on. Defaults to 8080, but can be 
 // overridden when starting the server. For example:
