@@ -30,6 +30,19 @@ const User = mongoose.model('User', {
   }
 })
 
+const News = mongoose.model('News', {
+  title: {
+    type: String,
+    minlength: 3
+  },
+  shortSynopsis: {
+    type: String,
+    minlength: 3
+  },
+  newsImage: {
+    type:
+  }
+})
 
 // Defines the port the app will run on. Defaults to 8080, but can be 
 // overridden when starting the server. For example:
