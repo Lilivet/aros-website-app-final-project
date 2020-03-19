@@ -89,6 +89,7 @@ const port = process.env.PORT || 8080
 const app = express()
 
 // Add middlewares to enable cors and json body parsing
+// This is the middleware to authenticate a member/user
 const authenticateUser = async (req, res, next) => {
   try {
     const user = await User.findOne({ accessToken: req.header('Authorization') })
@@ -96,7 +97,24 @@ const authenticateUser = async (req, res, next) => {
       req.user = user
       next()
     } else {
-      res.status(401).json({ loggedIn: false })
+      // It can also be written:
+      // res.status(401).json ({loggedOut: true})
+      res.status(401).json({ loggedIn: false, message: 'Please try logging in again' })
+    }
+  } catch (err) {
+    res.status(403).json({ message: 'Access token missing or invalid', errors: err.errors })
+  }
+}
+
+// this is a middleware to authenticare a person that has Admin tag true
+const authenticateAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ accessToken: req.header('Authorization') })
+    if (user && user.isAdmin) {
+      req.user = user
+      next()
+    } else {
+      res.status(401).json({ message: 'not Admin' })
     }
   } catch (err) {
     res.status(403).json({ message: 'Access token missing or invalid', errors: err.errors })
@@ -121,13 +139,13 @@ app.get('/', (req, res) => {
 // })
 // adminUser.save()
 
-// Signup post
-app.post('users', authenticateUser)
-app.post('/users', async (req, res) => {
+// Add User/Member only authorized users/ users with tag Admin can do it.
+app.post('/createMembers', authenticateAdmin)
+app.post('/createMembers', async (req, res) => {
   console.log('ivett')
   // try to register the user
   try {
-    const { name, email, password } = req.body
+    const { name, email, password, isAdmin } = req.body
     if (email.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
       // it is very important to encrypt the passwords and store them encrypted in our db!
       const user = new User({ name, email, password: bcrypt.hashSync(password), isAdmin })
@@ -140,16 +158,18 @@ app.post('/users', async (req, res) => {
     res.status(400).json({ message: 'Could not create user', errors: err.errors })
   }
 })
-//these end points are protected by the authentication (authenticateUser function above!)
-// app.get('/secretSections', authenticateUser)
-// app.get('/secretSections', async (req, res) => {
 
-//   try {
+//these end points are protected by the authenticateUser function above! This gives info or possibility to change data in the database to members
+// Like Otterdalen: Min startsida, ändra uppgifter/inställningar (settings), dokument, matrikel (hämta data för user), hoppkonto,Loggbok, bokning av arbetsdagar  
+app.post('/settings', authenticateUser)
+app.post('/settings', async (req, res) => {
+  // display : name, password, 
+  res.json({ message: 'you got access to the members only section' })
 
-//   }
-// })
+})
+
 // authentication access point (login/sign in)
-app.post('/sessions', async (req, res) => {
+app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email })
     if (user && bcrypt.compareSync(req.body.password, user.password)) {
@@ -168,20 +188,23 @@ app.post('/sessions', async (req, res) => {
   }
 })
 
-//Autorization for the super secret  message, only available for authenticated users
-// app.get('/secretPages/isAdmin=true', authenticateUser)
-// app.get('/secretPages/isAdmin=true', async (req, res) => {
-//   try {
-//     const secretPages = await SecretPages.find({
-//       // userId: mongoose.Types.ObjectId(req.params.id) })
-//       // .sort({ createdAt: 'desc' }).limit(8).exec()
-//       res.status(200).json(secretPages)
-//     } catch (err) {
-//       res.status(404).json({ message: 'Could not find user/secrets', errors: err.errors })
-//     }
-//   })
+//Autorization for Admin users to get the super secret pages and only available for authenticated administrators 
+app.get('/secretPages/', authenticateAdmin)
+app.get('/secretPages/', async (req, res) => {
+  try {
+    // const secretPages = await SecretPages.find({
+    // userId: mongoose.Types.ObjectId(req.params.id) })
+    // .sort({ createdAt: 'desc' }).limit(8).exec()
+    // res.status(200).json(secretPages)
+    res.send('hola')
+  } catch (err) {
+    res.status(404).json({ message: 'Could not find secret pages', errors: err.errors })
+  }
+})
+
 
 //Post to add images to cloudinary and to add title, short synopsis, synopsis and date of the news in mongodb
+app.post('/news', authenticateAdmin)
 app.post('/news', parser.single('image'), async (req, res) => {
   // console.log(req.file)
   // res.send('Viva,viva!')
@@ -197,10 +220,10 @@ app.post('/news', parser.single('image'), async (req, res) => {
   res.json(news)
 })
 // get(read) all the news posted by the admin into the database,
-// sort them by date in a descendent way and limit them to 8
+// sort them by date in a descendent way and limit them to 18
 app.get('/news/newsList', async (req, res) => {
   const newsList = await News.find().sort({ createdAt: 'desc' })
-    .limit(8)
+    .limit(18)
     .exec()
   res.json(newsList)
 })
