@@ -16,7 +16,6 @@ mongoose.Promise = Promise
 const User = mongoose.model('User', {
   name: {
     type: String,
-    unique: true,
     minlength: 3
   },
   email: {
@@ -134,27 +133,33 @@ app.get('/', (req, res) => {
 // const adminUser = new User({
 //   name: "Admin",
 //   email: "admin@aros.com",
-//   password: "!Ar0s2020",
+//   password: ()=> bcrypt.hashSync ("!Ar0s2020"),
 //   isAdmin: true
 // })
 // adminUser.save()
 
-// Add User/Member only authorized users/ users with tag Admin can do it.
-app.post('/createMembers', authenticateAdmin)
-app.post('/createMembers', async (req, res) => {
+
+
+// Register User/Member only authorized users/ users with tag Admin can do it.
+app.post('/registerMembers', authenticateAdmin)
+app.post('/registerMembers', async (req, res) => {
   console.log('ivett')
   // try to register the user
   try {
     const { name, email, password, isAdmin } = req.body
     if (email.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
       // it is very important to encrypt the passwords and store them encrypted in our db!
-      const user = new User({ name, email, password: bcrypt.hashSync(password), isAdmin })
+      const user = new User({ name: name, email: email, password: bcrypt.hashSync(password), isAdmin: isAdmin })
       await user.save()
       res.status(201).json({ id: user._id, name: user.name, accessToken: user.accessToken, isAdmin: user.isAdmin })
       console.log({ user })
       // if the user is not registered, then we catch the error
-    } else res.status(400).json({ message: 'Invalid email', errors: err.errors })
+    } else {
+      console.log("Bad email address!")
+      res.status(400).json({ message: 'Invalid email', errors: err.errors })
+    }
   } catch (err) {
+    console.log("Error: " + err)
     res.status(400).json({ message: 'Could not create user', errors: err.errors })
   }
 })
