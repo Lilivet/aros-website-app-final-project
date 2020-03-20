@@ -133,7 +133,7 @@ app.get('/', (req, res) => {
 const adminUser = new User({
   name: "Admin",
   email: "admin@admin.com",
-  password: () => bcrypt.hashSync("testtest"),
+  password: "testtest",
   isAdmin: true
 })
 adminUser.save()
