@@ -130,13 +130,13 @@ app.get('/', (req, res) => {
 
 //Seeded data for admin
 
-const adminUser = new User({
-  name: "Admin",
-  email: "admin@admin.com",
-  password: "testtest",
-  isAdmin: true
-})
-adminUser.save()
+// const adminUser = new User({
+//   name: "Admin",
+//   email: "admin@admin.com",
+//   password: "testtest",
+//   isAdmin: true
+// })
+// adminUser.save()
 
 
 
