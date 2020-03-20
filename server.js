@@ -130,13 +130,13 @@ app.get('/', (req, res) => {
 
 //Seeded data for admin
 
-// const adminUser = new User({
-//   name: "Admin",
-//   email: "admin@aros.com",
-//   password: ()=> bcrypt.hashSync ("!Ar0s2020"),
-//   isAdmin: true
-// })
-// adminUser.save()
+const adminUser = new User({
+  name: "Admin",
+  email: "admin@admin.com",
+  password: () => bcrypt.hashSync("testtest"),
+  isAdmin: true
+})
+adminUser.save()
 
 
 
