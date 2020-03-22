@@ -144,23 +144,29 @@ app.get('/', (req, res) => {
 app.post('/registerMembers', authenticateAdmin)
 app.post('/registerMembers', async (req, res) => {
   console.log('ivett')
+  const { name, email, password, isAdmin } = req.body
   // try to register the user
+  if (!email.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+    console.log("Bad email address!")
+    res.status(400).json({ success: false, message: 'Invalid email address' })
+    return
+  }
+
   try {
-    const { name, email, password, isAdmin } = req.body
-    if (email.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+    if (await User.findOne({ email: email })) {
+      // email already exists
+      res.status(400).json({ success: false, message: 'email already exists' })
+    } else {
       // it is very important to encrypt the passwords and store them encrypted in our db!
       const user = new User({ name: name, email: email, password: bcrypt.hashSync(password), isAdmin: isAdmin })
       await user.save()
-      res.status(201).json({ id: user._id, name: user.name, accessToken: user.accessToken, isAdmin: user.isAdmin })
+      res.status(201).json({ success: true, id: user._id, name: user.name, accessToken: user.accessToken, isAdmin: user.isAdmin })
       console.log({ user })
       // if the user is not registered, then we catch the error
-    } else {
-      console.log("Bad email address!")
-      res.status(400).json({ message: 'Invalid email', errors: err.errors })
     }
   } catch (err) {
     console.log("Error: " + err)
-    res.status(400).json({ message: 'Could not create user', errors: err.errors })
+    res.status(400).json({ success: false, message: 'Could not create user', errors: err.errors })
   }
 })
 
@@ -180,16 +186,18 @@ app.post('/login', async (req, res) => {
     if (user && bcrypt.compareSync(req.body.password, user.password)) {
       //Successful
       res.status(200).json({ userId: user._id, accessToken: user.accessToken, name: user.name, loggedIn: true, isAdmin: user.isAdmin })
+      console.log("Login successful")
     } else {
+      console.log("Login failed, email = " + req.body.email + ", password = " + req.body.password + (user ? ", real password = " + user.password : ", user not found"))
       //Failure:
       // a) user does not exist
       // b) the encrypted password does not match
       if (user === null)
-        res.status(404).json({ notFound: true })
+        res.status(404).json({ notFound: true, loggedIn: false })
       else res.status(401).json({ message: 'Username or password are incorrect' })
     }
   } catch (err) {
-    res.status(404).json({ message: 'Could not find user', errors: err.errors })
+    res.status(404).json({ message: 'Could not find user', errors: err.errors, loggedIn: false })
   }
 })
 
